@@ -201,6 +201,7 @@ class MysqlDataAdapter extends DataAdapter{
 
 	public function find($filter,$args = null,$sort = null)
 	{
+		$st = microtime(true);
 		$qb = $this->initQB();
 		$idField = $this->model->getIdentifierField();
 
@@ -217,7 +218,9 @@ class MysqlDataAdapter extends DataAdapter{
 		$qb->filters = $this->getQBFilterStr($filter);
 		$qb->sorts = $sort;
 		$query = $qb->getQuery();
-		$values = $qb->getArgs();//var_dump($query);var_dump($values);//exit;
-		return $this->getDB()->getAll($query,$values);
+		$values = $qb->getArgs();
+		$retValues = $this->getDB()->getAll($query,$values);
+		$this->resetToC5DB();
+		return $retValues;
 	}
 }
