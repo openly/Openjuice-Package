@@ -277,7 +277,7 @@ class OJModel extends Renderable{
 
 	}
 
-	protected function on_after_save()
+	protected function on_after_save(&$args = NULL)
 	{
 		
 	}	
