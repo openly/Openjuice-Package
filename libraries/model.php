@@ -43,7 +43,7 @@ class OJModel extends Renderable{
 		if(!$this->adapter){
 			Loader::library('data_adapter/' . $this->meta['adapter'],'openjuice');
 			$className = ucfirst($this->meta['adapter']) . 'DataAdapter';
-			$this->adapter = new $className(&$this,&$this->meta,&$this->fields,&$this->relations);
+			$this->adapter = new $className($this,$this->meta,$this->fields,$this->relations);
 		}
 		return $this->adapter;
 	}
@@ -127,9 +127,9 @@ class OJModel extends Renderable{
 			if($wiz->isComplete())
 			{
 				$args = $this->getValues();
-				$this->on_before_save(&$args);
-				$this->save(&$args);
-				$this->on_after_save(&$args);
+				$this->on_before_save($args);
+				$this->save($args);
+				$this->on_after_save($args);
 			}
 		}
 		else
@@ -138,7 +138,7 @@ class OJModel extends Renderable{
 			$args = $this->getValues();
 			if($form->validate($args))
 			{
-				$this->on_before_save(&$args);
+				$this->on_before_save($args);
 
 				if($this->isNewRecord())
 				{
@@ -151,7 +151,7 @@ class OJModel extends Renderable{
 					$this->status = "Updated";
 				}
 
-				$this->on_after_save(&$args);
+				$this->on_after_save($args);
 			}
 		}
 	}
@@ -232,7 +232,7 @@ class OJModel extends Renderable{
 		{
 			$this->on_before_load();
 			$values = $this->getDataAdapterObj()->load($id);
-			$this->on_after_load(&$values);
+			$this->on_after_load($values);
 			$form->setFieldValues($values);
 		}
 

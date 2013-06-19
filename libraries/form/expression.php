@@ -81,8 +81,8 @@ class Expression{
 		if(!$args) $args = $_POST;
 		if(is_array($condition))
 		{
-			$leftExpr = $this->validateExpression($condition['left'],&$args);
-			$rightExpr = $this->validateExpression($condition['right'],&$args);
+			$leftExpr = $this->validateExpression($condition['left'],$args);
+			$rightExpr = $this->validateExpression($condition['right'],$args);
 			switch(strtoupper($condition['oper']))
 			{
 				case "OR" :
