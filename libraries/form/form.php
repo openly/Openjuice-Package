@@ -145,7 +145,7 @@ EOF
 			}
 		}
 		$field['requiredArgs'] = $argFields;
-		return OJGenerator::getField(&$field,$this->fieldPrefix,$this->fieldTemplate,$this->formRules[$name])->getMarkup();
+		return OJGenerator::getField($field,$this->fieldPrefix,$this->fieldTemplate,$this->formRules[$name])->getMarkup();
 	}
 
 	public function render($args=NULL){
@@ -173,7 +173,7 @@ EOF
 				$this->applyFormRules($field,$args);
 			if(!$field['field_group'] || $field['field_group'] != $fieldGroup)
 				continue;
-			$fieldMarkup = OJGenerator::getField(&$field,$this->fieldPrefix,$fieldTemplate,$this->formRules[$field['name']])->getMarkup();
+			$fieldMarkup = OJGenerator::getField($field,$this->fieldPrefix,$fieldTemplate,$this->formRules[$field['name']])->getMarkup();
 			$renderedFields[] = array('field'=>$fieldMarkup);
 		}
 		$r = new Renderable($grpTemplate);
@@ -199,8 +199,8 @@ EOF
 			if($args == null) $args = $_POST;
 			foreach($this->formRules[$name] as $fieldRule){
 				$condition = $this->expr->parse($fieldRule['condition']);
-				if($this->expr->validateExpression($condition,&$args)){
-					$this->performRuleAction(&$field,&$fieldRule);
+				if($this->expr->validateExpression($condition,$args)){
+					$this->performRuleAction($field,$fieldRule);
 				}
 			}
 		}
@@ -228,15 +228,15 @@ EOF
 		$errors = array();
 		foreach ($this->fields as $field) {
 			$vals = is_array($this->values)? array_merge($this->values,$args):$args;
-			$this->applyFormRules(&$field,$vals);
-			$validators = OJGenerator::getValidators(&$field,$this->fieldPrefix);
+			$this->applyFormRules($field,$vals);
+			$validators = OJGenerator::getValidators($field,$this->fieldPrefix);
 			foreach ($validators as $validator) {
-				if(! $validator->validate(&$args)) $errors[] = $validator->getError();
+				if(! $validator->validate($args)) $errors[] = $validator->getError();
 			}
 		}
 		if(!empty($this->formMultiFieldValidations)){
 			$condition = $this->expr->parse($this->formMultiFieldValidations['condition']);
-			if(!$this->expr->validateExpression($condition,&$args)){
+			if(!$this->expr->validateExpression($condition,$args)){
 				$errors[]['message'] = $this->formMultiFieldValidations['message'];
 			}
 		}
@@ -255,7 +255,7 @@ EOF
 		foreach ($this->fields as $field) {
 			$hash = OJGenerator::getHash($field);
 			$fieldClass = ucfirst($hash['type']) . 'Field';
-			$retval =array_merge($retval, $fieldClass::getFieldValue(&$args,&$hash,$this->fieldPrefix,&$hash));
+			$retval =array_merge($retval, $fieldClass::getFieldValue($args,$hash,$this->fieldPrefix,$hash));
 		}
 		return $retval;
 	}

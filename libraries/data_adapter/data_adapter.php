@@ -28,5 +28,5 @@ abstract class DataAdapter {
 	public abstract function update($id,$args);
 	public abstract function load($id);
 	public abstract function delete($id);
-	public abstract function find($filter,$args,$sort)
+	public abstract function find($filter,$args,$sort);
 }

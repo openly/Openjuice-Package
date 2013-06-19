@@ -19,7 +19,7 @@ class OJGenerator{
 		$field = new $fieldClass();
 		$field->setPrefix($prefix);
 		$field->setTemplate($template);
-		$field->setVars(&$hash);
+		$field->setVars($hash);
 		return $field;
 	}
 
@@ -42,7 +42,7 @@ class OJGenerator{
 		$hash = $args;
 		if(is_array($args)){
 			if(!in_array('name', array_keys($args))){
-				$hash = self::getHashFromArray(&$args);
+				$hash = self::getHashFromArray($args);
 			}
 		}elseif (is_string($args)) {
 			$hash = self::getHashFromString($args);
