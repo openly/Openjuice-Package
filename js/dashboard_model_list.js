@@ -9,7 +9,12 @@ $(function(){
 		loader.show();
 		$.get('?'+$(this).serialize()+'&ajax=true',function(result){
 			$('.ccm-pane-body,.ccm-pane-footer').remove();
-			$('.ccm-pane-options').after(result);
+			if($('.ccm-pane-options').length < 1){
+				$('.ccm-pane-header').after(result);
+			}
+			else{
+				$('.ccm-pane-options').after(result);
+			}
 			loader.hide();
 		})
 	});
@@ -23,8 +28,12 @@ $(function(){
 		$.get(url,{ajax:true},function(result){
 			loader.hide();
 			$('.ccm-pane-body,.ccm-pane-footer').remove();
-			$('.ccm-pane-options').after(result)
+			if($('.ccm-pane-options').length < 1){
+				$('.ccm-pane-header').after(result);
+			}
+			else{
+				$('.ccm-pane-options').after(result);
+			}
 		});
 	}
 })
-
