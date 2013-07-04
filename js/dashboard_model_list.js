@@ -9,12 +9,7 @@ $(function(){
 		loader.show();
 		$.get('?'+$(this).serialize()+'&ajax=true',function(result){
 			$('.ccm-pane-body,.ccm-pane-footer').remove();
-			if($('.ccm-pane-options').length < 1){
-				$('.ccm-pane-header').after(result);
-			}
-			else{
-				$('.ccm-pane-options').after(result);
-			}
+			$('.ccm-pane-options').after(result);
 			loader.hide();
 		})
 	});
