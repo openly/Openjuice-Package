@@ -71,7 +71,10 @@ class ModelListController extends Controller{
 	public function view(){
 		if($_GET['ajax']){
 			$_SERVER['REQUEST_URI'] = str_replace('&ajax=true','',$_SERVER['REQUEST_URI']);
-			$this->renderList();
+			$str = $this->renderList();
+			echo '<div class="ccm-pane-body">' . $str . '</div>';
+			echo '<div class="ccm-pane-footer">' . $this->getFooter() . '</div>';
+			exit;
 		}
 	}
 
@@ -106,11 +109,6 @@ class ModelListController extends Controller{
 			'has_pagination' => $pagination->number_of_pages > 1
 		);
 		$str = $m->getMarkup(array_merge($params,$this->_pagination));
-		if($ajax){
-			echo '<div class="ccm-pane-body">' . $str . '</div>';
-			echo '<div class="ccm-pane-footer">' . $this->getFooter() . '</div>';
-			exit;
-		}
 
 		return $str;
 	}
