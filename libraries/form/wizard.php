@@ -1,343 +1,671 @@
 <?php
 defined('C5_EXECUTE') or die("Access Denied.");
 
-Loader::library('form/form','openjuice');
+Loader::library('form/form', 'openjuice');
 
-class OJWizard extends Renderable{
-	
-	protected $_steps = array();
-	protected $_fields = array();
-	//protected $currentStep = null;
-	protected $currentStepName = null;
-	protected $_currentStepFields = array();
-	protected $_count = 0;
-	protected $currentStepIndex = 0;
-	protected $sessionKey = null;
-	protected $values = array();
-	protected $_errors = array();
-	protected $completed = false;
-	protected $showUnSteppedFields = true;
-	protected $formMultiFieldValidations = array();
-	protected $formRules = NULL;
-	protected $fieldGroups = NULL;
-	protected $fieldTemplate = null;
+/**
+* OJWizard
+*
+* @uses     Renderable
+*
+* @category Category
+* @package  Package
+* @author   <>
+*/
+class OJWizard extends Renderable
+{
+    
+    protected $steps = array();
+    protected $fields = array();
+    protected $currentStepName = null;
+    protected $currentStepFields = array();
+    protected $count = 0;
+    protected $currentStepIndex = 0;
+    protected $sessionKey = null;
+    protected $values = array();
+    protected $errors = array();
+    protected $completed = false;
+    protected $showUnSteppedFields = true;
+    protected $formMultiFieldValidations = array();
+    protected $formRules = null;
+    protected $fieldGroups = null;
+    protected $fieldTemplate = null;
 
-	private $_stepValidations = NULL;
+    private $_stepValidations = null;
 
-	protected $_stepsKeys =array();
+    protected $stepsKeys =array();
 
-	protected $prevBtnName = "Previous";
-	protected $nextBtnName = "Next";
-	protected $finBtnName = "Finish";
+    protected $prevBtnName = "Previous";
+    protected $nextBtnName = "Next";
+    protected $finBtnName = "Finish";
 
-	protected $template = "{{{formFields}}";
+    protected $template = "{{{formFields}}";
 
-	protected $completeTemplate = "<h2>Wizard Completed....Data saved to the DB.</h2>";
+    protected $completeTemplate = "<h2>Wizard Completed....Data saved to the DB.</h2>";
 
-	public function __construct(&$fields,&$steps,&$formMultiFieldValidations = NULL,&$formRules = NULL,&$fieldGroups = null){
-		$this->_fields = $fields;
-		$this->formMultiFieldValidations = $formMultiFieldValidations;
-		$this->formRules = $formRules;
-		$this->fieldGroups = $fieldGroups;
-		
-		foreach($this->_fields as $key=>$field)
-		{
-			if(isset($field["show_in_form"]) && !$field["show_in_form"])
-				unset($this->_fields[$key]);
-			elseif(!isset($field["step"]))
-				$this->_fields[$key]["step"] = "NoStepName";
-		}
-				
-		$this->_steps = $steps;
-		if($this->showUnSteppedFields)
-		{
-			$this->currentStepName = "NoStepName";//$this->_stepsKeys[0];
-			$this->getCurrentStepFields();
-			if(count($this->currentStepFields)>0)
-			{
-				$this->_steps["NoStepName"] = "No Step Name";
-			}
-		}
-		
-		$this->_count = count($this->_steps);
-		$this->_stepsKeys = array_keys($this->_steps);
-		
-		$this->currentStepName = $this->_stepsKeys[0];
-		//$this->getCurrentStepFields();
-		$this->currentStepIndex = 0;
-		
-		$this->sessionKey = get_class($this) . date('Ymdhis');
-		$this->saveToSession();
-	}
-	
-	public static function getWizard(&$fields,&$steps,&$formMultiFieldValidations,&$formRules,&$fieldGroups){
-		session_start();
-		if($_REQUEST['wizard_key']){
-			$key = $_REQUEST['wizard_key'];
-			return unserialize($_SESSION[$key]);
-		}
-		return new OJWizard($fields,$steps,$formMultiFieldValidations,$formRules,$fieldGroups);
-	}
+    /**
+     * __construct
+     * 
+     * @param mixed &$fields                    Description.
+     * @param mixed &$steps                     Description.
+     * @param mixed &$formMultiFieldValidations Description.
+     * @param mixed &$formRules                 Description.
+     * @param mixed &$fieldGroups               Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function __construct(&$fields,
+        &$steps,
+        &$formMultiFieldValidations = null,
+        &$formRules = null,
+        &$fieldGroups = null
+    ) {
+        $this->fields = $fields;
+        $this->formMultiFieldValidations = $formMultiFieldValidations;
+        $this->formRules = $formRules;
+        $this->fieldGroups = $fieldGroups;
+        
+        foreach ($this->fields as $key=>$field) {
+            if (isset($field["show_in_form"])
+                && !$field["show_in_form"]
+            ) {
+                unset($this->fields[$key]);
+            } elseif (!isset($field["step"])) {
+                $this->fields[$key]["step"] = "NoStepName";
+            }
+        }
+                
+        $this->steps = $steps;
+        if ($this->showUnSteppedFields) {
+            $this->currentStepName = "NoStepName";
+            $this->_getCurrentStepFields();
+            if (count($this->currentStepFields) > 0) {
+                $this->steps["NoStepName"] = "No Step Name";
+            }
+        }
+        
+        $this->count = count($this->steps);
+        $this->stepsKeys = array_keys($this->steps);
+        
+        $this->currentStepName = $this->stepsKeys[0];
+        $this->currentStepIndex = 0;
+        
+        $this->sessionKey = get_class($this) . date('Ymdhis');
+        $this->_saveToSession();
+    }
+    
 
-	public function process(&$args = null){
-		if(!$args) $args = $_POST;
-		$this->values = array_merge($this->values,$this->getForm()->getFieldValues());
-		//$this->values = array_merge($this->values,$args);
+    /**
+     * getWizard
+     * 
+     * @param mixed &$fields                    Description.
+     * @param mixed &$steps                     Description.
+     * @param mixed &$formMultiFieldValidations Description.
+     * @param mixed &$formRules                 Description.
+     * @param mixed &$fieldGroups               Description.
+     *
+     * @access public
+     * @static
+     *
+     * @return mixed Value.
+     */
+    public static function getWizard(&$fields,
+        &$steps,
+        &$formMultiFieldValidations,
+        &$formRules,
+        &$fieldGroups
+    ) {
+        session_start();
+        if ($_REQUEST['wizard_key']) {
+            $key = $_REQUEST['wizard_key'];
+            return unserialize($_SESSION[$key]);
+        }
+        return new OJWizard(
+            $fields,
+            $steps,
+            $formMultiFieldValidations,
+            $formRules,
+            $fieldGroups
+        );
+    }
 
-		if(isset($args[$this->nextBtnName]))
-			$this->gotoNextStep();
-		else if(isset($args[$this->prevBtnName]))
-			$this->gotoPreviousStep();
-		else if(isset($args[$this->finBtnName]))
-			$this->complete();
-		else
-			echo "Invalid Button";
-	}
+    /**
+     * process
+     * 
+     * @param mixed &$args Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function process(&$args = null)
+    {
+        if (!$args) {
+            $args = $_POST;
+        }
+        $this->values = array_merge(
+            $this->values,
+            $this->getForm()->getFieldValues()
+        );
+        //$this->values = array_merge($this->values,$args);
 
-	private function validateForm($args =NULL)
-	{
-		if($args == NULL) $args = $_POST;
-		$retValue = true;
-		$form = $this->getForm();
-		if(!$form->validate($args)){
-			$this->_errors = $form->getErrors();
-			$this->_stepValidations[$this->currentStepIndex] = false;
-			$retValue = false;
-		}
+        if (isset($args[$this->nextBtnName])) {
+            $this->gotoNextStep();
+        } else if (isset($args[$this->prevBtnName])) {
+            $this->gotoPreviousStep();
+        } else if (isset($args[$this->finBtnName])) {
+            $this->complete();
+        } else {
+            echo "Invalid Button";
+        }
+    }
 
-		return $retValue;
-	}
+    /**
+     * validateForm
+     * 
+     * @param mixed $args Description.
+     *
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _validateForm($args =null)
+    {
+        if ($args == null) {
+            $args = $_POST;
+        }
+        $retValue = true;
+        $form = $this->getForm();
+        if (!$form->validate($args)) {
+            $this->errors = $form->getErrors();
+            $this->_stepValidations[$this->currentStepIndex] = false;
+            $retValue = false;
+        }
 
-	public function gotoNextStep(){		
-		//validate the current form Fields and then get the next step fields
-		if(!$this->validateForm()) return;
+        return $retValue;
+    }
 
-		$this->_stepValidations[$this->currentStepIndex] = true;
-		$this->currentStepIndex++;
+    /**
+     * gotoNextStep
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function gotoNextStep()
+    {     
+        //validate the current form Fields and then get the next step fields
+        if (!$this->_validateForm()) {
+            return;
+        }
 
-		if($this->currentStepIndex == $this->_count){
-			$this->completed = true;
-			$this->currentStepFields = array();
-			return;
-		}
+        $this->_stepValidations[$this->currentStepIndex] = true;
+        $this->currentStepIndex++;
 
-		$this->currentStepName = $this->_stepsKeys[$this->currentStepIndex];
+        if ($this->currentStepIndex == $this->count) {
+            $this->completed = true;
+            $this->currentStepFields = array();
+            return;
+        }
 
-		//$this->getCurrentStepFields();
-		
-		$this->saveToSession();
-	}
+        $this->currentStepName = $this->stepsKeys[$this->currentStepIndex];
 
-	public function gotoPreviousStep(){
-		if($args == NULL) $args = $_POST;
-		
-		$form = $this->getForm();
-		if(!$form->validate($args))
-			unset($this->_stepValidaions[$this->currentStepIndex]);
-		
-		$this->currentStepIndex--;
-		if($this->currentStepIndex == -1){
-			$this->currentStepIndex = 0;
-		}
-		$this->currentStepName = $this->_stepsKeys[$this->currentStepIndex];
-		//$this->getCurrentStepFields();
-		$this->saveToSession();		
-	}
+        $this->_saveToSession();
+    }
 
-	private function saveToSession(){
-		$_SESSION[$this->sessionKey] = serialize($this);
-	}
+    /**
+     * gotoPreviousStep
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function gotoPreviousStep()
+    {
+        if ($args == null) {
+            $args = $_POST;
+        }
+        
+        $form = $this->getForm();
+        if (!$form->validate($args)) {
+            unset($this->_stepValidaions[$this->currentStepIndex]);
+        }
+        
+        $this->currentStepIndex--;
+        if ($this->currentStepIndex == -1) {
+            $this->currentStepIndex = 0;
+        }
+        $this->currentStepName = $this->stepsKeys[$this->currentStepIndex];
+        $this->_saveToSession();     
+    }
 
-	public function reset(){
-		$this->currentStepName =$steps[0];
-		$this->currentStepIndex = 0;
-	}
+    /**
+     * saveToSession
+     * 
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _saveToSession()
+    {
+        $_SESSION[$this->sessionKey] = serialize($this);
+    }
 
-
-	public function getMarkup($args=NULL){
-		$retstr = t('<input type="hidden" name="%s" value="%s">','wizard_key',$this->sessionKey);
-
-		$m = new Mustache;
-		
-		if($this->completed)
-		{
-			$retstr .= $m->render($this->completeTemplate);
-		}
-		else
-		{
-			$form = $this->getForm();
-			$form->setFieldValues($this->values);
-			$formFields = $form->getMarkup($this->values);
-
-			//To Do: Call these methods and check in Mustache itself
-			if($this->hasPrevStep())
-				$previousButton = array("prevBtnName"=>$this->prevBtnName);
-
-			if($this->hasNextStep())
-				$nextButton = array("nextBtnName"=>$this->nextBtnName);
-
-			if($this->canFinishAtThisStep())
-				$finButton = array("finBtnName"=>$this->finBtnName);
-
-			$data = array("currentStepName" => $this->getCurrentStepDisplayName(),
-							"currentStepNumber" => $this->currentStepIndex + 1,
-							"TotalNumberOfSteps" => $this->count,
-							"prevBtnExists"=>$previousButton,
-							"nextBtnExists"=>$nextButton,
-							"finBtnExists"=>$finButton,
-							"formFields"=>$formFields
-						);
-
-			$retstr .= $m->render($this->template,$data);
-		}
-		return $retstr;
-	}
-
-	public function render($args = null){
-		echo $this->getMarkup($args);
-	}
-
-	public function renderField($field,$args=null)
-	{
-			$this->getForm()->renderField($field,$args);
-	}
-
-	public function getForm(){
-		$this->getCurrentStepFields();
-		$frm = new OJForm($this->currentStepFields,
-			$this->formMultiFieldValidations[$this->currentStepName],
-			$this->formRules,$this->fieldGroups,$this->values);
-
-		if($this->fieldTemplate != null){ $frm->setFieldTemplate($this->fieldTemplate);}
-		return $frm;
-	}
-
-	public function hasPrevStep(){
-		return !$this->completed && $this->currentStepIndex > 0; 
-	}
-
-	public function hasNextStep(){
-		return !$this->completed && $this->currentStepIndex < ($this->_count - 1);
-	}
-
-	public function canFinishAtThisStep(){
-		//Need to code here to check whether it can finish the wizard at this time
-		$canFinish = false;
-		if(!$this->completed)
-		{
-			$canFinish = true;
-			$currentstepIndex = $this->currentStepIndex;
-			$reload = false;
-
-			if($this->hasNextStep())
-			{
-				for($i = 0; $i<$this->_count;$i++)
-				{
-					if(!isset($this->_stepValidations[$i]))
-					{
-						$this->currentStepIndex = $i;
-						$this->currentStepName = $this->_stepsKeys[$this->currentStepIndex];
-						$this->getCurrentStepFields();
-						$this->_stepValidations[$i] = $this->validateForm($this->values);
-						$reload = true;
-					}
-					if(!$this->_stepValidations[$i])
-					{
-						$canFinish = false;
-						break;
-					}
-				}
-
-				if($reload)
-				{
-					$this->currentStepIndex = $currentstepIndex;
-					$this->currentStepName = $this->_stepsKeys[$this->currentStepIndex];
-					$this->getCurrentStepFields();
-				}
-			}
-			else
-				$canFinish = true;
-		}
-
-		return $canFinish;
-		//return true;
-	}
-
-	public function isComplete(){
-		return $this->completed;
-	}
-
-	public function complete(){
-		if(!$this->validateForm()) return;
-
-		$this->_stepValidations[$this->currentStepIndex] = true;
-
-		if($this->canFinishAtThisStep()){
-			$this->completed = true;
-			$this->currentStepFields = array();
-			$this->currentStepName = "";
-			$this->currentStepIndex = $this->_count + 1;
-		}else{
-			throw new Exception("Cannot complete wizzard at this stage", 1);	
-		}
-	}
-
-	public function getErrors(){
-		return $this->_errors; 
-	}
-
-	public function getCurrentStepDisplayName(){
-		return $this->_steps[$this->currentStepName];
-	}
-	
-	public function hasErrors(){
-		return count($this->_errors) > 0;
-	}
-
-	private function getCurrentStepFields()	{
-		$this->currentStepFields = array();
-		foreach ($this->_fields as $key=>$field)
-			if($field['step'] == $this->currentStepName)
-				$this->currentStepFields[$key] = $field;
-	}
-
-	public function getCurrentStepNumber(){
-		return $this->currentStepIndex + 1;
-	}
-
-	public function getPrevButtonName(){return $this->prevBtnName;}
-	public function getNextButtonName(){return $this->nextBtnName;}
-	public function getFinishButtonName(){return $this->finBtnName;}
-
-	public function setFieldTemplate($tmpl){$this->fieldTemplate = $tmpl;}
-	public function getValues(){
-		return $this->values;
-	}
-
-	public function setFieldValues(&$values=null){
-		if(!$values) $values = $_POST;
-		foreach ($this->_fields as $key=>$field) {
-			if(isset($values[$key])){
-				$this->_fields[$key]['default'] = $values[$key];
-			}
-		}
-		$this->values = array_merge($this->values,$values);
-		$this->saveToSession();
-	}
-
-	public function isNewWizard()
-	{
-		return !isset($_REQUEST['wizard_key']);
-	}
+    /**
+     * reset
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function reset()
+    {
+        $this->currentStepName =$steps[0];
+        $this->currentStepIndex = 0;
+    }
 
 
-	public function getFields()
-	{
-		return $this->_fields;
-	}
+    /**
+     * getMarkup
+     * 
+     * @param mixed $args Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getMarkup($args=null)
+    {
+        $retstr = t(
+            '<input type="hidden" name="%s" value="%s">',
+            'wizard_key',
+            $this->sessionKey
+        );
 
-	public function setFields($value)
-	{
-		$this->_fields = $value;
-	}
+        $m = new Mustache;
+        
+        if ($this->completed) {
+            $retstr .= $m->render($this->completeTemplate);
+        } else {
+            $form = $this->getForm();
+            $form->setFieldValues($this->values);
+            $formFields = $form->getMarkup($this->values);
+
+            //To Do: Call these methods and check in Mustache itself
+            if ($this->hasPrevStep()) {
+                $previousButton = array("prevBtnName"=>$this->prevBtnName);
+            }
+
+            if ($this->hasNextStep()) {
+                $nextButton = array("nextBtnName"=>$this->nextBtnName);
+            }
+
+            if ($this->canFinishAtThisStep()) {
+                $finButton = array("finBtnName"=>$this->finBtnName);
+            }
+
+            $data = array(
+                "currentStepName" => $this->getCurrentStepDisplayName(),
+                "currentStepNumber" => $this->currentStepIndex + 1,
+                "TotalNumberOfSteps" => $this->count,
+                "prevBtnExists"=>$previousButton,
+                "nextBtnExists"=>$nextButton,
+                "finBtnExists"=>$finButton,
+                "formFields"=>$formFields
+            );
+
+            $retstr .= $m->render($this->template, $data);
+        }
+        return $retstr;
+    }
+
+    /**
+     * render
+     * 
+     * @param mixed $args Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function render($args = null)
+    {
+        echo $this->getMarkup($args);
+    }
+
+    /**
+     * renderField
+     * 
+     * @param mixed $field Description.
+     * @param mixed $args  Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function renderField($field,$args=null)
+    {
+        $this->getForm()->renderField($field, $args);
+    }
+
+    /**
+     * getForm
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getForm()
+    {
+        $this->_getCurrentStepFields();
+        $frm = new OJForm(
+            $this->currentStepFields,
+            $this->formMultiFieldValidations[$this->currentStepName],
+            $this->formRules,
+            $this->fieldGroups,
+            $this->values
+        );
+
+        if ($this->fieldTemplate != null) {
+            $frm->setFieldTemplate($this->fieldTemplate);
+        }
+        return $frm;
+    }
+
+    /**
+     * hasPrevStep
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function hasPrevStep()
+    {
+        return !$this->completed && $this->currentStepIndex > 0; 
+    }
+
+    /**
+     * hasNextStep
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function hasNextStep()
+    {
+        return !$this->completed
+         && ($this->currentStepIndex < ($this->count - 1));
+    }
+
+    /**
+     * canFinishAtThisStep
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function canFinishAtThisStep()
+    {
+        //Need to code here to check whether 
+        //it can finish the wizard at this time
+        $canFinish = false;
+        if (!$this->completed) {
+            $canFinish = true;
+            $currentstepIndex = $this->currentStepIndex;
+            $reload = false;
+
+            if ($this->hasNextStep()) {
+                for ($i = 0; $i<$this->count;$i++) {
+                    if (!isset($this->_stepValidations[$i])) {
+                        $this->currentStepIndex = $i;
+                        $this->currentStepName = $this->stepsKeys[$this->currentStepIndex];
+                        $this->_getCurrentStepFields();
+                        $this->_stepValidations[$i] = $this->_validateForm($this->values);
+                        $reload = true;
+                    }
+                    if (!$this->_stepValidations[$i]) {
+                        $canFinish = false;
+                        break;
+                    }
+                }
+
+                if ($reload) {
+                    $this->currentStepIndex = $currentstepIndex;
+                    $this->currentStepName = $this->stepsKeys[$this->currentStepIndex];
+                    $this->_getCurrentStepFields();
+                }
+            } else {
+                $canFinish = true;
+            }
+        }
+
+        return $canFinish;
+    }
+
+    /**
+     * isComplete
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function isComplete()
+    {
+        return $this->completed;
+    }
+
+    /**
+     * complete
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function complete()
+    {
+        if (!$this->_validateForm()) {
+            return;
+        }
+
+        $this->_stepValidations[$this->currentStepIndex] = true;
+
+        if ($this->canFinishAtThisStep()) {
+            $this->completed = true;
+            $this->currentStepFields = array();
+            $this->currentStepName = "";
+            $this->currentStepIndex = $this->count + 1;
+        } else {
+            throw new Exception("Cannot complete wizzard at this stage", 1);    
+        }
+    }
+
+    /**
+     * getErrors
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getErrors()
+    {
+        return $this->errors; 
+    }
+
+    /**
+     * getCurrentStepDisplayName
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getCurrentStepDisplayName()
+    {
+        return $this->steps[$this->currentStepName];
+    }
+    
+
+    /**
+     * hasErrors
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function hasErrors()
+    {
+        return count($this->errors) > 0;
+    }
+
+    /**
+     * _getCurrentStepFields
+     * 
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _getCurrentStepFields()
+    {
+        $this->currentStepFields = array();
+        foreach ($this->fields as $key=>$field)
+            if($field['step'] == $this->currentStepName)
+                $this->currentStepFields[$key] = $field;
+    }
+
+    /**
+     * getCurrentStepNumber
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getCurrentStepNumber()
+    {
+        return $this->currentStepIndex + 1;
+    }
+
+    /**
+     * getPrevButtonName
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getPrevButtonName()
+    {
+        return $this->prevBtnName;
+    }
+
+    /**
+     * getNextButtonName
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getNextButtonName()
+    {
+        return $this->nextBtnName;
+    }
+
+    /**
+     * getFinishButtonName
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getFinishButtonName()
+    {
+        return $this->finBtnName;
+    }
+
+    /**
+     * setFieldTemplate
+     * 
+     * @param mixed $tmpl Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function setFieldTemplate($tmpl)
+    {
+        $this->fieldTemplate = $tmpl;
+    }
+
+    /**
+     * getValues
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getValues()
+    {
+        return $this->values;
+    }
+
+    /**
+     * setFieldValues
+     * 
+     * @param mixed &$values Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function setFieldValues(&$values=null)
+    {
+        if (!$values) {
+            $values = $_POST;
+        }
+        foreach ($this->fields as $key=>$field) {
+            if (isset($values[$key])) {
+                $this->fields[$key]['default'] = $values[$key];
+            }
+        }
+        $this->values = array_merge($this->values, $values);
+        $this->_saveToSession();
+    }
+
+    /**
+     * isNewWizard
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function isNewWizard()
+    {
+        return !isset($_REQUEST['wizard_key']);
+    }
+
+
+    /**
+     * getFields
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getFields()
+    {
+        return $this->fields;
+    }
+
+    /**
+     * setFields
+     * 
+     * @param mixed $value Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function setFields($value)
+    {
+        $this->fields = $value;
+    }
 }

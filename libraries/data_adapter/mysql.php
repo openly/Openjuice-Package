@@ -1,226 +1,385 @@
 <?php
 
-Loader::library('data_adapter/data_adapter','openjuice');
-Loader::library('data_adapter/data_list','openjuice');
-Loader::library('data_adapter/mysql_list','openjuice');
-Loader::library('data_adapter/mysql_qb','openjuice');
+Loader::library('data_adapter/data_adapter', 'openjuice');
+Loader::library('data_adapter/data_list', 'openjuice');
+Loader::library('data_adapter/mysql_list', 'openjuice');
+Loader::library('data_adapter/mysql_qb', 'openjuice');
 
-class MysqlDataAdapter extends DataAdapter{
+/**
+* MysqlDataAdapter
+*
+* @uses     DataAdapter
+*
+* @category Category
+* @package  Package
+* @author   Abhi
+*/
+class MysqlDataAdapter extends DataAdapter
+{
 
-	protected $model;
+    protected $model;
 
-	protected $table;
+    protected $table;
 
-	protected $_clause         = '';
-	protected $_sort           = '';
-	protected $_clauseArgs     = array();
-	protected $_sortArgs       = array();
-	protected $_requiredFields = array();
-	private $_dbColNames = NULL;
-	private $_fieldValues = NULL;
-	protected $_db = NULL;
-	
-	protected function generateList(){
-		return new MysqlList($this->model,$this->meta,$this->fields,$this->relations);
-	}
+    protected $clause         = '';
+    protected $sort           = '';
+    protected $clauseArgs     = array();
+    protected $sortArgs       = array();
+    protected $requiredFields = array();
+    private $_dbColNames = null;
+    private $_fieldValues = null;
+    protected $db = null;
+    
 
-	public function create($args){
-		$this->getDB();
-		$valueQues = str_repeat('?,',count($this->getDBFieldNames($args)) - 1) . '?';
-		$query = t('INSERT INTO `%s` (`%s`,%s) VALUES (null,%s)',
-								$this->meta['table'],
-								$this->model->getIdentifierField(),
-								implode(', ',$this->_dbColNames),
-								$valueQues
-						);
+    /**
+     * generateList
+     * 
+     * @access protected
+     *
+     * @return mixed Value.
+     */
+    protected function generateList()
+    {
+        return new MysqlList(
+            $this->model,
+            $this->meta,
+            $this->fields,
+            $this->relations
+        );
+    }
 
-		$retValues = $this->_db->Execute($query, $this->_fieldValues);
-		$this->resetToC5DB();
-		return $retValues;
-	}
+    /**
+     * create
+     * 
+     * @param mixed $args Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function create($args)
+    {
+        $this->_getDB();
+        $valueQues = str_repeat('?,', count($this->_getDBFieldNames($args)) - 1) . '?';
+        $query = t(
+            'INSERT INTO `%s` (`%s`,%s) VALUES (null,%s)',
+            $this->meta['table'],
+            $this->model->getIdentifierField(),
+            implode(', ', $this->_dbColNames),
+            $valueQues
+        );
 
-	public function update($id,$args){
-		$this->getDB();
-		$this->getDBFieldNames($args);
-		$idField = $this->model->getIdentifierField();
-		unset($this->_dbColNames[$idField]);
-		$valueQues = implode('=?, ',$this->_dbColNames) . '=?';
+        $retValues = $this->db->Execute($query, $this->_fieldValues);
+        $this->_resetToC5DB();
+        return $retValues;
+    }
 
-		$query = t('UPDATE `%s` SET %s WHERE `%s`=?',
-						$this->meta['table'],
-						$valueQues,
-						$idField
-					);
-		$this->_fieldValues[] = $id;
-		$retValues = $this->_db->Execute($query, $this->_fieldValues);
-		$this->resetToC5DB();
-		return $retValues;
-	}
+    /**
+     * update
+     * 
+     * @param mixed $id   Description.
+     * @param mixed $args Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function update($id,$args)
+    {
+        $this->_getDB();
+        $this->_getDBFieldNames($args);
+        $idField = $this->model->getIdentifierField();
+        unset($this->_dbColNames[$idField]);
+        $valueQues = implode('=?, ', $this->_dbColNames) . '=?';
 
-	public function load($id){
-		$qb = $this->initQB();
-		$idField = $this->model->getIdentifierField();
+        $query = t(
+            'UPDATE `%s` SET %s WHERE `%s`=?',
+            $this->meta['table'],
+            $valueQues,
+            $idField
+        );
+        $this->_fieldValues[] = $id;
+        $retValues = $this->db->Execute($query, $this->_fieldValues);
+        $this->_resetToC5DB();
+        return $retValues;
+    }
 
-		foreach($this->fields as $key=>$field)
-		{
-			if(isset($field['db_col']))
-				$qbField[$key]['db_col'] = $field['db_col'];
-		}
+    /**
+     * load
+     * 
+     * @param mixed $id Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function load($id)
+    {
+        $qb = $this->initQB();
+        $idField = $this->model->getIdentifierField();
 
-		$qbField[$idField]['db_col'] = $idField;
+        foreach ($this->fields as $key=>$field) {
+            if (isset($field['db_col'])) {
+                $qbField[$key]['db_col'] = $field['db_col'];
+            }
+        }
 
-		$qb->fields = $qbField;
-		
-		$qb->filters = array($idField=>$id);
-		$query = $qb->getQuery();
-		$values = $qb->getArgs();
-		$retValues = $this->getDB()->getRow($query,$values);
-		$this->resetToC5DB();
-		return $retValues;
-	}
+        $qbField[$idField]['db_col'] = $idField;
 
-	public function delete($id){
-		$this->getDB();
-		$idField = $this->model->getIdentifierField();
-		$query = t('DELETE FROM `%s` WHERE `%s`=?',
-				$this->meta['table'],
-				$idField
-		);
-		$retValues = $this->_db->Execute($query, array($id));
-		$this->resetToC5DB();
-		return $retValues;
-	}
+        $qb->fields = $qbField;
+        
+        $qb->filters = array($idField=>$id);
+        $query = $qb->getQuery();
+        $values = $qb->getArgs();
+        $retValues = $this->_getDB()->getRow($query, $values);
+        $this->_resetToC5DB();
+        return $retValues;
+    }
 
-	protected function initQB(){
-		$qb = new MysqlQueryBuilder();
-		$qb->tables = $this->meta['table'];
-		return $qb;
-	}
+    /**
+     * delete
+     * 
+     * @param mixed $id Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function delete($id)
+    {
+        $this->_getDB();
+        $idField = $this->model->getIdentifierField();
+        $query = t(
+            'DELETE FROM `%s` WHERE `%s`=?',
+            $this->meta['table'],
+            $idField
+        );
+        $retValues = $this->db->Execute($query, array($id));
+        $this->_resetToC5DB();
+        return $retValues;
+    }
 
-	protected function getQBFilterStr($filter){
-		if($filter != NULL){
-			preg_match_all("/`(.*?)`/", $filter, $dbCols);
-			foreach($dbCols[1] as $dbCol)
-			{
-				
-				$filter = str_replace("`$dbCol`", "`{$this->fields[$dbCol]['db_col']}`", $filter);
-				$param[$dbCol] = $args[$dbCol];
-			}
-			return $filter;
-		}
-		return null;
-	}
+    /**
+     * initQB
+     * 
+     * @access protected
+     *
+     * @return mixed Value.
+     */
+    protected function initQB()
+    {
+        $qb = new MysqlQueryBuilder();
+        $qb->tables = $this->meta['table'];
+        return $qb;
+    }
 
-	public function getDistinctRowsFor($col,$filter=null,$args=null){
-		if($args == null) $args = $_POST;
+    /**
+     * getQBFilterStr
+     * 
+     * @param mixed $filter Description.
+     *
+     * @access protected
+     *
+     * @return mixed Value.
+     */
+    protected function getQBFilterStr($filter)
+    {
+        if ($filter != null) {
+            preg_match_all("/`(.*?)`/", $filter, $dbCols);
+            foreach ($dbCols[1] as $dbCol) {
+                $filter = str_replace(
+                    "`$dbCol`",
+                    "`{$this->fields[$dbCol]['db_col']}`",
+                    $filter
+                );
+                $param[$dbCol] = $args[$dbCol];
+            }
+            return $filter;
+        }
+        return null;
+    }
 
-		$qb = $this->initQB();
-		$field = array('db_col' => $this->fields[$col]['db_col'],'distinct' => true);
+    /**
+     * getDistinctRowsFor
+     * 
+     * @param mixed $col    Description.
+     * @param mixed $filter Description.
+     * @param mixed $args   Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getDistinctRowsFor($col,$filter=null,$args=null)
+    {
+        if($args == null) $args = $_POST;
 
-		$qb->fields = array($col => $field);
-		$qb->filters = $this->getQBFilterStr($filter);
-		$qb->addArgs($args);
-		$query = $qb->getQuery();
-		$values = $qb->getArgs();
-		//echo $query;var_dump($values);
-		if($qb->hasNull()){return array();}
-		$rows = array();
-		foreach($this->getDB()->getAll($query,$values) as $row){
-			$rows[] = $row[$col];
-		}
-		$this->resetToC5DB();
-		return $rows;
-	}
+        $qb = $this->initQB();
+        $field = array(
+            'db_col' => $this->fields[$col]['db_col'],
+            'distinct' => true
+        );
 
-	public function getDistinctRows($filter = NULL,$args = NULL){
-		$defaultFields = $this->model->getDefaultFields();
-		if($defaultFields == NULL)
-		{
-			foreach($this->fields as $key=>$field)
-				if(isset($field['db_col']))
-				{
-					$defaultFields[] = $key;
-					break;
-				}
-		}
+        $qb->fields = array($col => $field);
+        $qb->filters = $this->getQBFilterStr($filter);
+        $qb->addArgs($args);
+        $query = $qb->getQuery();
+        $values = $qb->getArgs();
 
-		if($args == NULL) $args = $_POST;
-		$this->getDB();
-		$qb = $this->initQB();
+        if ($qb->hasNull()) {
+            return array();
+        }
+        $rows = array();
+        foreach ($this->_getDB()->getAll($query, $values) as $row) {
+            $rows[] = $row[$col];
+        }
+        $this->_resetToC5DB();
+        return $rows;
+    }
 
-		$selectField = $this->model->getIdentifierField();
-		$field[$selectField]['db_col'] = $selectField;
-		foreach($this->model->getDefaultFields() as $defField)
-		{
-			if(isset($this->fields[$defField]))
-			{
-				$field[$defField]['db_col'] = $this->fields[$defField]['db_col'];
-			}
-		}
-		$qb->fields = $field;
-		$qb->filters = $this->getQBFilterStr($filter);
-		
-		$qb->addArgs($args);
-		$query = $qb->getQuery();
-		$values = $qb->getArgs();
-		if($qb->hasNull()){return array();}
-		$values = $this->getDB()->getAll($query,$values);
-		$this->resetToC5DB();
-		return $values;
-	}
+    /**
+     * getDistinctRows
+     * 
+     * @param mixed $filter Description.
+     * @param mixed $args   Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getDistinctRows($filter = null,$args = null)
+    {
+        $defaultFields = $this->model->getDefaultFields();
+        if ($defaultFields == null) {
+            foreach ($this->fields as $key=>$field) {
+                if (isset($field['db_col'])) {
+                    $defaultFields[] = $key;
+                    break;
+                }
+            }
+        }
 
-	private function getDB()
-	{
-		// if($this->_db == NULL){
-			if(!empty($this->meta)){
-				$this->_db = Loader::db($this->meta['server'],$this->meta['userName'],$this->meta['password'],$this->meta['database'],$this->meta['autoConnect']);
-			}else{
-				$this->_db = Loader::db(null, null, null, null, true);
-			}
-		// }
-			
-		return $this->_db;
-	}
+        if ($args == null) {
+            $args = $_POST;
+        }
+        $this->_getDB();
+        $qb = $this->initQB();
 
-	private function resetToC5DB(){
-		if(!empty($this->meta)){
-			$this->_db = Loader::db(null, null, null, null, true);
-		}
-	}
+        $selectField = $this->model->getIdentifierField();
+        $field[$selectField]['db_col'] = $selectField;
+        foreach ($this->model->getDefaultFields() as $defField) {
+            if (isset($this->fields[$defField])) {
+                $field[$defField]['db_col'] = $this->fields[$defField]['db_col'];
+            }
+        }
+        $qb->fields = $field;
+        $qb->filters = $this->getQBFilterStr($filter);
+        
+        $qb->addArgs($args);
+        $query = $qb->getQuery();
+        $values = $qb->getArgs();
+        if ($qb->hasNull()) {
+            return array();
+        }
+        $values = $this->_getDB()->getAll($query, $values);
+        $this->_resetToC5DB();
+        return $values;
+    }
 
-	private function getDBFieldNames($values = NULL){
-		if($values == NULL) $values = $this->model->getValues();
-		foreach($this->fields as $key=>$field){
-			if(isset($field["db_col"])){
-				$this->_dbColNames[] ='`' . $field["db_col"] . '`';
-				$this->_fieldValues[] = $values[$key];
-			}
-		}
-		return $this->_dbColNames;
-	}
+    /**
+     * getDB
+     * 
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _getDB()
+    {
+        if (!empty($this->meta)) {
+            $this->db = Loader::db(
+                $this->meta['server'],
+                $this->meta['userName'],
+                $this->meta['password'],
+                $this->meta['database'],
+                $this->meta['autoConnect']
+            );
+        } else {
+            $this->db = Loader::db(null, null, null, null, true);
+        }
+            
+        return $this->db;
+    }
 
-	public function find($filter,$args = null,$sort = null)
-	{
-		$st = microtime(true);
-		$qb = $this->initQB();
-		$idField = $this->model->getIdentifierField();
+    /**
+     * resetToC5DB
+     * 
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _resetToC5DB()
+    {
+        if (!empty($this->meta)) {
+            $this->db = Loader::db(null, null, null, null, true);
+        }
+    }
 
-		foreach($this->fields as $key=>$field)
-		{
-			if(isset($field['db_col']))
-				$qbField[$key]['db_col'] = $field['db_col'];
-		}
+    /**
+     * getDBFieldNames
+     * 
+     * @param mixed $values Description.
+     *
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _getDBFieldNames($values = null)
+    {
+        if ($values == null) {
+            $values = $this->model->getValues();
+        }
+        foreach ($this->fields as $key=>$field) {
+            if (isset($field["db_col"])) {
+                $this->_dbColNames[] ='`' . $field["db_col"] . '`';
+                $this->_fieldValues[] = $values[$key];
+            }
+        }
+        return $this->_dbColNames;
+    }
 
-		$qbField[$idField]['db_col'] = $idField;
+    /**
+     * find
+     * 
+     * @param mixed $filter Description.
+     * @param mixed $args   Description.
+     * @param mixed $sort   Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function find($filter,$args = null,$sort = null)
+    {
+        $st = microtime(true);
+        $qb = $this->initQB();
+        $idField = $this->model->getIdentifierField();
 
-		$qb->fields = $qbField;
-		$qb->addArgs($args);
-		$qb->filters = $this->getQBFilterStr($filter);
-		$qb->sorts = $sort;
-		$query = $qb->getQuery();
-		$values = $qb->getArgs();
-		$retValues = $this->getDB()->getAll($query,$values);
-		$this->resetToC5DB();
-		return $retValues;
-	}
+        foreach ($this->fields as $key=>$field) {
+            if (isset($field['db_col'])) {
+                $qbField[$key]['db_col'] = $field['db_col'];
+            }
+        }
+
+        $qbField[$idField]['db_col'] = $idField;
+
+        $qb->fields = $qbField;
+        $qb->addArgs($args);
+        $qb->filters = $this->getQBFilterStr($filter);
+        $qb->sorts = $sort;
+        $query = $qb->getQuery();
+        $values = $qb->getArgs();
+        $retValues = $this->_getDB()->getAll($query, $values);
+        $this->_resetToC5DB();
+        return $retValues;
+    }
 }

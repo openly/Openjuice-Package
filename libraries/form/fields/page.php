@@ -1,9 +1,32 @@
 <?php
 defined('C5_EXECUTE') or die("Access Denied.");
 
-class PageField extends OJField{
-	public function initialize(){
-		$pageSelector = Loader::helper('form/page_selector');
-		$this->field = '<div id="'.$this->getDisplayFieldName().'">' . $pageSelector->selectPage($this->getDisplayFieldName(), $this->default) . '</div>'; 
-	}
+/**
+* PageField
+*
+* @uses     OJField
+*
+* @category Category
+* @package  Package
+* @author    <>
+*/
+class PageField extends OJField
+{
+    /**
+     * initialize
+     * 
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function initialize()
+    {
+        $pageSelector = Loader::helper('form/page_selector');
+        $this->field = '<div id="' . $this->getDisplayFieldName().'">' .
+        $this->field .= $pageSelector->selectPage(
+            $this->getDisplayFieldName(),
+            $this->default
+        );
+        $this->field .= '</div>'; 
+    }
 }
