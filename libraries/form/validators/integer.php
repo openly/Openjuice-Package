@@ -1,25 +1,57 @@
 <?php
 defined('C5_EXECUTE') or die("Access Denied.");
 
-class IntegerValidator extends OJValidator{
-	public function validate($args){
-		$valueToTest = $args[$this->getDisplayFieldName()];
-		if(!OJUtil::checkNotBlank($valueToTest) || $this->isInteger($valueToTest)) {
-			return true;
-		}
-		$this->error = array(
-			'message' => t('Field "%s" is not an integer.',$this->label),
-			'name' => $this->fieldName
-		);
-		return false;
-	}
+/**
+* IntegerValidator
+*
+* @uses     OJValidator
+*
+* @category Category
+* @package  Package
+* @author    <>
+*/
+class IntegerValidator extends OJValidator
+{
+    /**
+     * validate
+     * 
+     * @param mixed $args Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function validate($args)
+    {
+        $valueToTest = $args[$this->getDisplayFieldName()];
+        if (!OJUtil::checkNotBlank($valueToTest)
+            || $this->_isInteger($valueToTest)
+        ) {
+            return true;
+        }
+        $this->error = array(
+            'message' => t('Field "%s" is not an integer.', $this->label),
+            'name' => $this->fieldName
+        );
+        return false;
+    }
 
-	private function isInteger($data){
-		if (is_int($data)) {
-			return true;
-		} else if (is_string($data) === true && is_numeric($data) === true) {
-			return (strpos($data, '.') === false);
-		}
-		return false;
-	}
+    /**
+     * isInteger
+     * 
+     * @param mixed $data Description.
+     *
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _isInteger($data)
+    {
+        if (is_int($data)) {
+            return true;
+        } else if (is_string($data) === true && is_numeric($data) === true) {
+            return (strpos($data, '.') === false);
+        }
+        return false;
+    }
 }

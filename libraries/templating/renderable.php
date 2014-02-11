@@ -1,42 +1,120 @@
 <?php
-require_once(dirname(__FILE__) . '/mustache.php');
+require_once dirname(__FILE__) . '/mustache.php';
 
-class Renderable extends Mustache{
+/**
+* Renderable
+*
+* @uses     Mustache
+*
+* @category Category
+* @package  Package
+* @author    <>
+*/
+class Renderable extends Mustache
+{
 
-	protected $fieldsToRender = array();
-	protected $template;
+    protected $fieldsToRender = array();
+    protected $template;
 
-	public function __construct($template=null){
-		$this->template = $template;
-	}
+    /**
+     * __construct
+     * 
+     * @param mixed $template Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function __construct($template=null)
+    {
+        $this->template = $template;
+    }
 
-	protected function getTemplateVars(){
-		$retval = array();
-		foreach ($this->fieldsToRender as $field) {
-			$retval[$field] = $this->{$field};
-		}
-		return $retval;
-	}
+    /**
+     * getTemplateVars
+     * 
+     * @access protected
+     *
+     * @return mixed Value.
+     */
+    protected function getTemplateVars()
+    {
+        $retval = array();
+        foreach ($this->fieldsToRender as $field) {
+            $retval[$field] = $this->{$field};
+        }
+        return $retval;
+    }
 
-	public function getMarkup(&$args = null){
-		if(!is_array($args)){
-			$args = $this->getTemplateVars();
-		}
-		$m = new Mustache;
-		return $m->render($this->template, $args);
-	}
+    /**
+     * getMarkup
+     * 
+     * @param mixed &$args Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function getMarkup(&$args = null)
+    {
+        if (!is_array($args)) {
+            $args = $this->getTemplateVars();
+        }
+        $m = new Mustache;
+        return $m->render($this->template, $args);
+    }
 
-	public function render(&$args = null){
-		echo $this->getMarkup($args);
-	}
+    /**
+     * render
+     * 
+     * @param mixed &$args Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function render(&$args = null)
+    {
+        echo $this->getMarkup($args);
+    }
 
-	public function setTemplate($str){
-		$this->template = $str;
-	}
+    /**
+     * setTemplate
+     * 
+     * @param mixed $str Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function setTemplate($str)
+    {
+        $this->template = $str;
+    }
 }
 
-class SimpleRenderable extends Renderable{
-	public function __construct($template=null){
-		$this->template = $template;
-	}
+/**
+* SimpleRenderable
+*
+* @uses     Renderable
+*
+* @category Category
+* @package  Package
+* @author    <>
+*/
+class SimpleRenderable extends Renderable
+{
+    /**
+     * __construct
+     * 
+     * @param mixed $template Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function __construct($template=null)
+    {
+        $this->template = $template;
+    }
 }

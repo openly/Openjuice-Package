@@ -2,63 +2,167 @@
 
 defined('C5_EXECUTE') or die("Access Denied.");
 
-class OJGenerator{
-	public static $params = array('name','dbcol','type','label','validations','step','model','values','default','custom_error_message','template','fieldAttrs');
-	
-	public static function getField(&$args,$prefix,$template){
-		return self::getFieldFromHash(self::getHash($args),$prefix,$template);
-	}
+/**
+* OJGenerator
+*
+* @uses     
+*
+* @category Category
+* @package  Package
+* @author    <>
+*/
+class OJGenerator
+{
+    public static $params = array(
+        'name','dbcol','type','label','validations',
+        'step','model','values','default','custom_error_message',
+        'template','fieldAttrs'
+    );
+    
 
-	public static function getValidators(&$args,$value){
-		return self::getValidatorFromHash(self::getHash($args),$value);
-	}
+    /**
+     * getField
+     * 
+     * @param mixed &$args    Description.
+     * @param mixed $prefix   Description.
+     * @param mixed $template Description.
+     *
+     * @access public
+     * @static
+     *
+     * @return mixed Value.
+     */
+    public static function getField(&$args,$prefix,$template)
+    {
+        return self::_getFieldFromHash(
+            self::getHash($args),
+            $prefix,
+            $template
+        );
+    }
 
-	private static function getFieldFromHash(&$hash,$prefix,$template){
-		//debug_print_backtrace();
-		$fieldClass = ucfirst($hash['type']) . 'Field';
-		$field = new $fieldClass();
-		$field->setPrefix($prefix);
-		$field->setTemplate($template);
-		$field->setVars($hash);
-		return $field;
-	}
+    /**
+     * getValidators
+     * 
+     * @param mixed &$args Description.
+     * @param mixed $value Description.
+     *
+     * @access public
+     * @static
+     *
+     * @return mixed Value.
+     */
+    public static function getValidators(&$args,$value)
+    {
+        return self::_getValidatorFromHash(self::getHash($args), $value);
+    }
 
-	private static function getValidatorFromHash(&$hash,$prefix){
-		$validators = array();
-		foreach (split(' ',$hash[validations]) as $validation) {
-			if(strlen($validation) < 1) continue;
-			$validatorClass = ucfirst($validation) . 'Validator';
-			$validator = new $validatorClass();
-			$validator->setPrefix($prefix);
-			$validator->setFieldName($hash['name']);
-			$validator->setLabel($hash['label']);
-			$validator->setErrorMessage($hash['custom_error_message']);
-			$validators[] = $validator;
-		}
-		return $validators;
-	}
-	
-	public static function getHash(&$args){
-		$hash = $args;
-		if(is_array($args)){
-			if(!in_array('name', array_keys($args))){
-				$hash = self::getHashFromArray($args);
-			}
-		}elseif (is_string($args)) {
-			$hash = self::getHashFromString($args);
-		}
-		return $hash;
-	}
+    /**
+     * _getFieldFromHash
+     * 
+     * @param mixed &$hash    Description.
+     * @param mixed $prefix   Description.
+     * @param mixed $template Description.
+     *
+     * @access private
+     * @static
+     *
+     * @return mixed Value.
+     */
+    private static function _getFieldFromHash(&$hash,$prefix,$template)
+    {
+        $fieldClass = ucfirst($hash['type']) . 'Field';
+        $field = new $fieldClass();
+        $field->setPrefix($prefix);
+        $field->setTemplate($template);
+        $field->setVars($hash);
+        return $field;
+    }
 
-	private static function getHashFromArray(&$array){
-		$hash = array();
-		foreach (self::$params as $param) {
-			$hash[$param] = array_shift($array);
-		}
-		return $hash;
-	}
+    /**
+     * _getValidatorFromHash
+     * 
+     * @param mixed &$hash  Description.
+     * @param mixed $prefix Description.
+     *
+     * @access private
+     * @static
+     *
+     * @return mixed Value.
+     */
+    private static function _getValidatorFromHash(&$hash,$prefix)
+    {
+        $validators = array();
+        foreach (split(' ', $hash['validations']) as $validation) {
+            if (strlen($validation) < 1) {
+                continue;
+            }
+            $validatorClass = ucfirst($validation) . 'Validator';
+            $validator = new $validatorClass();
+            $validator->setPrefix($prefix);
+            $validator->setFieldName($hash['name']);
+            $validator->setLabel($hash['label']);
+            $validator->setErrorMessage($hash['custom_error_message']);
+            $validators[] = $validator;
+        }
+        return $validators;
+    }
+    
 
-	private static function getHashFromString($str){
-		return self::getHashFromArray(split(',', $str));
-	}
+    /**
+     * getHash
+     * 
+     * @param mixed &$args Description.
+     *
+     * @access public
+     * @static
+     *
+     * @return mixed Value.
+     */
+    public static function getHash(&$args)
+    {
+        $hash = $args;
+        if (is_array($args)) {
+            if (!in_array('name', array_keys($args))) {
+                $hash = self::_getHashFromArray($args);
+            }
+        } elseif (is_string($args)) {
+            $hash = self::_getHashFromString($args);
+        }
+        return $hash;
+    }
+
+    /**
+     * _getHashFromArray
+     * 
+     * @param mixed &$array Description.
+     *
+     * @access private
+     * @static
+     *
+     * @return mixed Value.
+     */
+    private static function _getHashFromArray(&$array)
+    {
+        $hash = array();
+        foreach (self::$params as $param) {
+            $hash[$param] = array_shift($array);
+        }
+        return $hash;
+    }
+
+    /**
+     * _getHashFromString
+     * 
+     * @param mixed $str Description.
+     *
+     * @access private
+     * @static
+     *
+     * @return mixed Value.
+     */
+    private static function _getHashFromString($str)
+    {
+        return self::_getHashFromArray(split(',', $str));
+    }
 }
