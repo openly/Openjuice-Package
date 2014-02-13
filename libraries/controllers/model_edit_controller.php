@@ -1,4 +1,5 @@
 <?php 
+require_once __DIR__ . '/../form/form.php';
 
 /**
 * ModelEditController
@@ -164,7 +165,7 @@ class ModelEditController extends Controller
     *
     * @return mixed Value.
     */
-    public function load($id)
+    public function load($id=null)
     {
         $this->model = new $this->modelName($id);
         $this->_init($this->model);
@@ -181,24 +182,101 @@ class ModelEditController extends Controller
     */
     private function _init($model)
     {
+        $this->form = $this->getForm($model);
+        
         if ($this->isPost()) {
-            $model->process();
-            if ($model->getForm()->hasErrors()) {
-                $this->set(
-                    'error',
-                    OJUtil::getErrorsList($model->getForm()->getErrors())
-                );
-            } else {
+            $processRes = $model->process($this->post());
+            
+            if ($processRes) {
+                //To Do: Status code correction
                 $status = $model->getStatus();
+                //To Do: good mechanism for list url and edit url
                 if (($this->listURL != null)
                     && ($status == 'Added' || $status == 'Updated')
                 ) {
+                    //To Do: set success messsage
                     $this->redirect($this->listURL);
                 }
+            } else {
+                $this->set(
+                    'error',
+                    OJUtil::getErrorsList(
+                        $model->getErrors()
+                    )
+                );
             }
         }
-        $this->form = $model->getForm();
-        $this->form->setFieldTemplate($this->fieldTemplate);
+    }
+
+    /**
+     * getForm
+     * 
+     * @param mixed &$model Description.
+     *
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    protected function getForm(&$model)
+    {
+        if ($this->form == null) {
+            
+            $this->form = $model->useWizzard ?
+                $this->_getOJWizard($model):
+                $this->_getOJForm($model);
+            
+            $this->form->setFieldTemplate($this->fieldTemplate);
+        }
+
+        $this->form->setFieldValues($model->getValues());
+
+        return $this->form;
+    }
+
+    /**
+     * _getOJForm
+     * 
+     * @param mixed &$model Description.
+     *
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _getOJForm(&$model)
+    {
+        return new OJForm(
+            $model->fields,
+            $model->formMultiFieldValidations,
+            $model->formRules,
+            $model->fieldGroups,
+            $model->values
+        );
+    }
+
+    /**
+     * _getWizard
+     * 
+     * @param mixed &$model Description.
+     *
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _getOJWizard(&$model)
+    {
+        if (count($model->steps) > 0) {
+            $wiz = OJWizard::getWizard(
+                $model->fields,
+                $model->steps,
+                $model->formMultiFieldValidations,
+                $model->formRules,
+                $model->fieldGroups,
+                $model->values
+            );
+            return $wiz;
+        }
+        //To DO: Throw Exception
+        return null;
     }
 
     /**

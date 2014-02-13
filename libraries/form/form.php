@@ -6,7 +6,6 @@ Loader::library('form/field', 'openjuice');
 Loader::library('form/validator', 'openjuice');
 Loader::library('util', 'openjuice');
 Loader::library('form/generator', 'openjuice');
-Loader::library('form/expression', 'openjuice');
 
 /**
 * OJForm
@@ -15,7 +14,7 @@ Loader::library('form/expression', 'openjuice');
 *
 * @category Category
 * @package  Package
-* @author    <>
+* @author   Abhi
 */
 class OJForm
 {
@@ -36,7 +35,6 @@ EOF
     ;
 
     protected $errors = array();
-    private $_expr = null;
     protected $template = "{{{formFields}}";
     protected $submitBtnName = "Save";
 
@@ -70,8 +68,6 @@ EOF
                 unset($this->fields[$key]);
             }
         }
-
-        $this->_expr = new Expression(array_keys($this->fields));
     }
 
     /**
@@ -153,25 +149,6 @@ EOF
     }
 
     /**
-     * _includeValidators
-     * 
-     * @access private
-     *
-     * @return mixed Value.
-     */
-    private function _includeValidators()
-    {
-        $fileHelper = Loader::helper('file');
-        foreach (OJUtil::getIncludeDirs('validators') as $dir) {
-            foreach ($fileHelper->getDirectoryContents($dir) as $file) {
-                if (preg_match('/\.php$/', $file)) {
-                    include_once $dir . '/' . $file;
-                }
-            }
-        }
-    }
-
-    /**
      * getMarkup
      * 
      * @param mixed $args Description.
@@ -228,7 +205,6 @@ EOF
         }
         $vals = is_array($this->values) ?
         array_merge($this->values, $args) : $args;
-        $this->_applyFormRules($field, $vals);
         $name = $field['name'];
         if (!empty($field['requiredArgs'])) {
             $requiredFields = explode(',', $field['requiredArgs']);
@@ -358,107 +334,7 @@ EOF
         echo $this->getFieldGroupMarkup($fieldGroup);
     }
 
-    /**
-     * _applyFormRules
-     * 
-     * @param mixed &$field Description.
-     * @param mixed &$args  Description.
-     *
-     * @access private
-     *
-     * @return mixed Value.
-     */
-    private function _applyFormRules(&$field,&$args=null)
-    {
-        //To do: Now calling this method at two places validation
-        // and field generation. Need to make it once
-        $name = $field['name'];
-        if (isset($this->formRules[$name])) {
-            if ($args == null) {
-                $args = $_POST;
-            }
-            foreach ($this->formRules[$name] as $fieldRule) {
-                $condition = $this->_expr->parse($fieldRule['condition']);
-                if ($this->_expr->validateExpression($condition, $args)) {
-                    $this->_performRuleAction($field, $fieldRule);
-                }
-            }
-        }
-    }
-
-    /**
-     * _performRuleAction
-     * 
-     * @param mixed &$field     Description.
-     * @param mixed &$fieldRule Description.
-     *
-     * @access private
-     *
-     * @return mixed Value.
-     */
-    private function _performRuleAction(&$field,&$fieldRule)
-    {
-        switch($fieldRule['action']){
-            case 'hide':
-                $field['type'] = 'hidden';
-                $field['validations'] = '';
-                break;
-            case 'search':
-                $field['fieldParams'] = $fieldRule['param'];
-                break;
-            case 'change':
-                $field = array_merge($field, $fieldRule['attrs']);
-                break;
-        }
-    }
-
-    /**
-     * validate
-     * 
-     * @param mixed &$args Description.
-     *
-     * @access public
-     *
-     * @return mixed Value.
-     */
-    public function validate(&$args=null)
-    {
-        if ($args == null) {
-            $args = $_POST;
-        }
-        $this->_includeValidators();
-        $errors = array();
-        foreach ($this->fields as $field) {
-            $vals = is_array($this->values)?
-            array_merge($this->values, $args):$args;
-            
-            $this->_applyFormRules($field, $vals);
-            $validators = OJGenerator::getValidators(
-                $field,
-                $this->fieldPrefix
-            );
-            foreach ($validators as $validator) {
-                if (! $validator->validate($args)) {
-                    $errors[] = $validator->getError();
-                }
-            }
-        }
-        if (!empty($this->formMultiFieldValidations)) {
-            $condition = $this->_expr->parse(
-                $this->formMultiFieldValidations['condition']
-            );
-
-            $expResult = $this->_expr->validateExpression(
-                $condition,
-                $args
-            );
-            if (!$expResult) {
-                $errors[]['message'] = $this->formMultiFieldValidations['message'];
-            }
-        }
-        $this->errors = $errors;
-        return count($errors)<1;
-    }
+    
 
     /**
      * getErrors

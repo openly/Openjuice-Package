@@ -67,8 +67,8 @@ class MysqlQueryBuilder
         if ($val == null) {
             return;
         }
-        $var = '_' . $name;
-        $this->{$var} = $val;
+
+        $this->{$name} = $val;
     }
 
     /**
@@ -82,8 +82,7 @@ class MysqlQueryBuilder
      */
     public function __get($name)
     {
-        $var = '_' . $name;
-        return $this->{$var};
+        return $this->{$name};
     }
 
     /**
@@ -157,8 +156,9 @@ class MysqlQueryBuilder
      */
     protected function canBuildQuery()
     {
-        if(isset($this->tables) && isset($this->fields))
+        if(isset($this->tables) && isset($this->fields)) {
             return true;
+        }
     }
 
     /**

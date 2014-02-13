@@ -8,7 +8,7 @@ require_once dirname(__FILE__) . '/mustache.php';
 *
 * @category Category
 * @package  Package
-* @author    <>
+* @author   Abhi
 */
 class Renderable extends Mustache
 {
@@ -100,7 +100,7 @@ class Renderable extends Mustache
 *
 * @category Category
 * @package  Package
-* @author    <>
+* @author   Abhi
 */
 class SimpleRenderable extends Renderable
 {

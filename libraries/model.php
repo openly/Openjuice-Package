@@ -1,24 +1,20 @@
 <?php
-
-Loader::library('templating/renderable', 'openjuice');
-Loader::library('form/wizard', 'openjuice');
-Loader::library('form/form', 'openjuice');
+require_once __DIR__ . '/helpers/validate.php';
 
 /**
 * OJModel
 *
-* @uses     Renderable
-*
 * @category Category
 * @package  Package
-* @author    <>
+* @author   Abhi
 */
-class OJModel extends Renderable
+class OJModel
 {
     // Configuration variables
-    protected $meta = array( 'adapter' => 'mysql' );
+    protected $meta = array('adapter' => 'mysql');
     protected $identifier = 'id';
     protected $fields = array();
+    protected $fieldPrefix = '';
 
     protected $relations = array();
 
@@ -32,12 +28,17 @@ class OJModel extends Renderable
 
     protected $steps = array();
     protected $useWizzard = false;
-    protected $form = null;
+
     protected $defaultFields = null;
-    protected $formMultiFieldValidations =null;
+
+    protected $formMultiFieldValidations = null;
     protected $formRules =null;
 
-    protected $status = null;
+    //To Do: Use codes and strings
+    private $_status = null;
+
+    private $_values = array();
+    private $_errors = array();
 
     /**
      * __construct
@@ -50,9 +51,36 @@ class OJModel extends Renderable
      */
     public function __construct($id=null)
     {
+        $this->_addIDField($id);
+
         $this->init();
-        if($id != null)
+        
+        if ($id != null) {
             $this->load($id);
+        }
+    }
+
+    /**
+     * getDataAdapterObj
+     * 
+     * @access protected
+     *
+     * @return mixed Value.
+     */
+    protected function getDataAdapterObj()
+    {
+        if (!$this->adapter) {
+            include_once __DIR__ . '/data_adapter/' . $this->meta['adapter'] . '.php';
+            $className = ucfirst($this->meta['adapter']) . 'DataAdapter';
+
+            $this->adapter = new $className(
+                $this,
+                $this->meta,
+                $this->fields,
+                $this->relations
+            );
+        }
+        return $this->adapter;
     }
 
     /**
@@ -67,30 +95,6 @@ class OJModel extends Renderable
         return $this->getDataAdapterObj()->getList();
     }
 
-    /**
-     * getDataAdapterObj
-     * 
-     * @access protected
-     *
-     * @return mixed Value.
-     */
-    protected function getDataAdapterObj()
-    {
-        if (!$this->adapter) {
-            Loader::library(
-                'data_adapter/' . $this->meta['adapter'],
-                'openjuice'
-            );
-            $className = ucfirst($this->meta['adapter']) . 'DataAdapter';
-            $this->adapter = new $className(
-                $this,
-                $this->meta,
-                $this->fields,
-                $this->relations
-            );
-        }
-        return $this->adapter;
-    }
 
     /**
      * search
@@ -164,51 +168,6 @@ class OJModel extends Renderable
     }
 
     /**
-     * getForm
-     * 
-     * @access public
-     *
-     * @return mixed Value.
-     */
-    public function getForm()
-    {
-        if ($this->form == null) {
-            if ($this->useWizzard) {
-                $this->form = $this->_getWizard();
-            } else {
-                $this->form = new OJForm(
-                    $this->fields,
-                    $this->formMultiFieldValidations,
-                    $this->formRules,
-                    $this->fieldGroups
-                );
-            }
-        }
-        return $this->form;
-    }
-
-    /**
-     * getWizard
-     * 
-     * @access private
-     *
-     * @return mixed Value.
-     */
-    private function _getWizard()
-    {
-        if (count($this->steps) > 0) {
-            $wiz = OJWizard::getWizard(
-                $this->fields,
-                $this->steps,
-                $this->formMultiFieldValidations,
-                $this->formRules,
-                $this->fieldGroups
-            );
-        }
-        return $wiz;
-    }
-
-    /**
      * getValues
      * 
      * @access public
@@ -217,9 +176,7 @@ class OJModel extends Renderable
      */
     public function getValues()
     {
-        $this->formValues = $this->useWizzard ?
-        $this->form->getValues() : $this->form->getFieldValues();
-        return $this->formValues;
+        return $this->_values;
     }
 
     /**
@@ -232,71 +189,91 @@ class OJModel extends Renderable
      *
      * @return mixed Value.
      */
-    public function save(&$args,$id = null)
+    public function save(&$args, $id = null)
     {
-        $id = ($id != null && $id > 0) ?
-        $id : $this->formValues[$this->identifier];
-        if ($id > 0) {
+        //To Do: Catch Exception on DB save
+        if ($id) {
             $this->getDataAdapterObj()->update($id, $args);
-            $this->status = "Updated";
+            $this->_status = "Updated";
         } else {
             $this->getDataAdapterObj()->create($args);
-            $this->status = "Added";
+            $this->_status = "Added";
         }
     }
 
     /**
      * process
      * 
+     * @param mixed &$args Description.
+     *
      * @access public
      *
      * @return mixed Value.
      */
-    public function process()
+    public function process(&$args=null)
     {
         if ($this->useWizzard) {
-            $wiz = $this->getForm();
-            $wiz->process();
-            if ($wiz->isComplete()) {
-                $args = $this->getValues();
-                $this->on_before_save($args);
-                $this->save($args);
-                $this->on_after_save($args);
-            }
+            //process the wizard
+            // $wiz->process();
+            // if ($wiz->isComplete()) {
+            //     $args = $this->getValues();
+            //     $this->on_before_save($args);
+            //     $this->save($args);
+            //     $this->on_after_save($args);
+            // }
+            return true;
         } else {
-            $form = $this->getForm();
-            $args = $this->getValues();
-            if ($form->validate($args)) {
+            if ($this->validate($args)) {
                 $this->on_before_save($args);
 
-                if ($this->_isNewRecord()) {
-                    $this->getDataAdapterObj()->create($args);
-                    $this->status = "Added";                    
-                } else {
-                    $this->getDataAdapterObj()->update(
-                        $args[$this->identifier],
-                        $args
-                    );
-                    $this->status = "Updated";
-                }
+                $this->save($args, $args[$this->identifier]);
 
                 $this->on_after_save($args);
+
+                return true;
             }
         }
+        return false;
     }
 
     /**
-     * isNewRecord
+     * getErrors
      * 
-     * @access private
+     * @access public
      *
      * @return mixed Value.
      */
-    private function _isNewRecord()
+    public function getErrors()
     {
-        $value = $this->getValues();
-        return !(isset($value[$this->identifier])
-            && !empty($value[$this->identifier]));
+        return $this->_errors;
+    }
+
+    /**
+     * validate
+     * 
+     * @param mixed &$args Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function validate(&$args)
+    {
+        $this->_errors = array();
+        
+        $validate = new Validate(
+            $this->fields,
+            $this->formMultiFieldValidations,
+            $this->fieldPrefix
+        );
+
+        if ($validate->validate($args)) {
+            return true;
+        } else {
+            $this->_status = "Validation Failed";
+            $this->_errors = $validate->getErrors();
+            return false;
+        }
     }
 
     /**
@@ -320,7 +297,7 @@ class OJModel extends Renderable
      */
     public function getStatus()
     {
-        return $this->status;
+        return $this->_status;
     }
 
     /**
@@ -416,18 +393,6 @@ class OJModel extends Renderable
     }
 
     /**
-     * isWizard
-     * 
-     * @access public
-     *
-     * @return mixed Value.
-     */
-    public function isWizard()
-    {
-        return $this->useWizzard;
-    }
-
-    /**
      * load
      * 
      * @param mixed $id Description.
@@ -438,23 +403,13 @@ class OJModel extends Renderable
      */
     public function load($id)
     {
-        if (!$this->useWizzard) {
-            $this->addIDField($id);
-        }
-
-        $form = $this->getForm();
-
-        //To dp:if it is new form, then only load
-        if (!$this->useWizzard || $form->isNewWizard()) {
-            $this->on_before_load();
-            $values = $this->getDataAdapterObj()->load($id);
-            $this->on_after_load($values);
-            $form->setFieldValues($values);
-        }
+        $this->on_before_load();
+        $this->_values = $this->getDataAdapterObj()->load($id);
+        $this->on_after_load($this->_values);
     }
 
     /**
-     * addIDField
+     * addIDField - adds the hidden ID field to the model's fields variable
      * 
      * @param mixed $id Description.
      *
@@ -462,7 +417,7 @@ class OJModel extends Renderable
      *
      * @return mixed Value.
      */
-    public function addIDField($id)
+    private function _addIDField($id)
     {
         $field['name'] = $this->identifier;
         $field['db_col'] = $this->identifier;
@@ -506,11 +461,41 @@ class OJModel extends Renderable
      */
     public function delete($id)
     {
-        if ($id != null) {
+        if ($id) {
             $this->getDataAdapterObj()->delete($id);
+            return true;
         }
+
+        return false;
     }
 
+    /**
+     * __get
+     * 
+     * @param mixed $name Description.
+     *
+     * @access public
+     *
+     * @return mixed Value.
+     */
+    public function __get($name)
+    {
+        //To Do: avoid the private and protected variables
+        return $this->$name;
+    }
+
+    /**
+     * init - function for overriding.
+     * This will get called on model constructor
+     * 
+     * @access protected
+     *
+     * @return mixed Value.
+     */
+    protected function init()
+    {
+
+    }
 
     /**
      * on_before_load
@@ -566,15 +551,4 @@ class OJModel extends Renderable
         
     }   
 
-    /**
-     * init
-     * 
-     * @access protected
-     *
-     * @return mixed Value.
-     */
-    protected function init()
-    {
-
-    }       
 }

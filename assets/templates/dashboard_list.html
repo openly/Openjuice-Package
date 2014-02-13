@@ -1,20 +1,22 @@
 <div id='model-result-list'>
-	<table cellspacing="0" cellpadding="0" border="0" class="ccm-results-list" id="ccm-{{model}}-list">
-		<tbody>
-			<tr>
-				{{#headers}}
-				<th width="{{width}}" class="{{class}}"><a class="ajax" href="{{sort_link}}">{{label}}</a></th>
-				{{/headers}}
-			</tr>
-			{{#list}}
-			{{#rows}}
-			<tr class="ccm-list-record ">
-				{{#cols}}
-				<td>{{{col}}}</td>
-				{{/cols}}
-			</tr>
-			{{/rows}}	
-			{{/list}}
-		</tbody>
-	</table>
+  <table cellspacing="0" cellpadding="0" border="0" class="ccm-results-list" id="ccm-{{model}}-list">
+    <tbody>
+      <tr>
+        {{#headers}}
+        <th width="{{width}}" class="{{class}}">
+          <a class="ajax" href="{{sort_link}}">{{label}}</a>
+        </th>
+        {{/headers}}
+      </tr>
+      {{#list}}
+      {{#rows}}
+      <tr class="ccm-list-record ">
+        {{#cols}}
+        <td>{{{col}}}</td>
+        {{/cols}}
+      </tr>
+      {{/rows}} 
+      {{/list}}
+    </tbody>
+  </table>
 </div>

@@ -1,8 +1,9 @@
 <?php
 defined('C5_EXECUTE') or die("Access Denied.");
 
-Loader::library('templating/renderable', 'openjuice');
-Loader::library('util', 'openjuice');
+require_once __DIR__ . '/../templating/renderable.php';
+require_once __DIR__ . '/../util.php';
+require_once __DIR__ . '/../form/form.php';
 
 /**
 * ModelListController
@@ -157,11 +158,12 @@ class ModelListController extends Controller
      */
     public function delete($id=null)
     {
-        if ($id!= null) {
-            $this->getModelObj()->delete($id);
+        if ($id && $this->getModelObj()->delete($id)) {
             $this->set('message', get_class($this->getModelObj()) . ' Deleted.');
-            $this->view();
+        } else {
+            $this->set('error', 'Error happened while deleting ' . get_class($this->getModelObj()));
         }
+        $this->view();
     }
 
     /**
@@ -497,7 +499,7 @@ class ModelListController extends Controller
      */
     protected function editWrap($col,$row,$wrap)
     {
-        return '<a href="' . $wrap['url'] . $row['__id__'] . '" title="' . $col . '">' . $col . '</a>';
+        return '<a href="' . View::Url($wrap['url']) . $row['__id__'] . '" title="' . $col . '">' . $col . '</a>';
     }
 
     /**

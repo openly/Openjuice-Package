@@ -9,12 +9,13 @@ defined('C5_EXECUTE') or die("Access Denied.");
 *
 * @category Category
 * @package  Package
-* @author    <>
+* @author   Abhi
 */
 class OJGenerator
 {
+    //To Do: move this to model
     public static $params = array(
-        'name','dbcol','type','label','validations',
+        'name','db_col','type','label','validations',
         'step','model','values','default','custom_error_message',
         'template','fieldAttrs'
     );
@@ -45,16 +46,16 @@ class OJGenerator
      * getValidators
      * 
      * @param mixed &$args Description.
-     * @param mixed $value Description.
+     * @param mixed $prefix Description.
      *
      * @access public
      * @static
      *
      * @return mixed Value.
      */
-    public static function getValidators(&$args,$value)
+    public static function getValidators(&$args,$prefix)
     {
-        return self::_getValidatorFromHash(self::getHash($args), $value);
+        return self::_getValidatorFromHash(self::getHash($args), $prefix);
     }
 
     /**
@@ -100,7 +101,8 @@ class OJGenerator
             $validatorClass = ucfirst($validation) . 'Validator';
             $validator = new $validatorClass();
             $validator->setPrefix($prefix);
-            $validator->setFieldName($hash['name']);
+            $name = empty($hash['name']) ? $hash['db_col'] : $hash['name'];
+            $validator->setFieldName($name);
             $validator->setLabel($hash['label']);
             $validator->setErrorMessage($hash['custom_error_message']);
             $validators[] = $validator;
@@ -112,22 +114,21 @@ class OJGenerator
     /**
      * getHash
      * 
-     * @param mixed &$args Description.
+     * @param mixed &$hash Description.
      *
      * @access public
      * @static
      *
      * @return mixed Value.
      */
-    public static function getHash(&$args)
+    public static function getHash($hash)
     {
-        $hash = $args;
-        if (is_array($args)) {
-            if (!in_array('name', array_keys($args))) {
-                $hash = self::_getHashFromArray($args);
+        if (is_array($hash)) {
+            if (!in_array('name', array_keys($hash))) {
+                $hash = self::_getHashFromArray($hash);
             }
-        } elseif (is_string($args)) {
-            $hash = self::_getHashFromString($args);
+        } elseif (is_string($hash)) {
+            $hash = self::_getHashFromString($hash);
         }
         return $hash;
     }
@@ -146,7 +147,7 @@ class OJGenerator
     {
         $hash = array();
         foreach (self::$params as $param) {
-            $hash[$param] = array_shift($array);
+            $hash[$param] = $array[$param];
         }
         return $hash;
     }

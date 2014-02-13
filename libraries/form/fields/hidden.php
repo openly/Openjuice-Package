@@ -8,12 +8,11 @@ defined('C5_EXECUTE') or die("Access Denied.");
 *
 * @category Category
 * @package  Package
-* @author    <>
+* @author   Abhi
 */
 class HiddenField extends OJField
 {
     protected $hidden = true;
-    
 
     /**
      * initialize
@@ -29,7 +28,7 @@ class HiddenField extends OJField
         if ($_SERVER['REQUEST_METHOD'] == "POST") {
             $this->default = $_POST[$this->getDisplayFieldName()];
         }
-        if (!is_string($this->default)) {
+        if ($this->default &&  !is_string($this->default)) {
             $this->default = serialize($this->default);
         }
         if ($_SERVER['REQUEST_METHOD'] == "POST") {

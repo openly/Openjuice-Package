@@ -148,7 +148,7 @@ class MysqlList extends DataList
     }
 
     /**
-     * getQB
+     * getQB -gets the new query builder object to build a new query
      * 
      * @access private
      *

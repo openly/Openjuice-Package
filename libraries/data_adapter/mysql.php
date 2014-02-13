@@ -339,7 +339,10 @@ class MysqlDataAdapter extends DataAdapter
             $values = $this->model->getValues();
         }
         foreach ($this->fields as $key=>$field) {
-            if (isset($field["db_col"])) {
+            if (
+                isset($field["db_col"]) && 
+                $this->model->getIdentifierField() != $key
+            ) {
                 $this->_dbColNames[] ='`' . $field["db_col"] . '`';
                 $this->_fieldValues[] = $values[$key];
             }

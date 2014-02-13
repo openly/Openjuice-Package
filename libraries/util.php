@@ -8,7 +8,7 @@ defined('C5_EXECUTE') or die("Access Denied.");
 *
 * @category Category
 * @package  Package
-* @author    <>
+* @author   Abhi
 */
 class OJUtil
 {
@@ -96,7 +96,7 @@ class OJUtil
      */
     public static function checkNotBlank($str)
     {
-        return isset($str) && $str != null && trim($str) != '' && $str != '0';
+        return isset($str) && $str != null && trim($str) != '';
     }
 
 
