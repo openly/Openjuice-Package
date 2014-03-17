@@ -22,6 +22,8 @@ class OJModel
 
     protected $listTemplates = array();
     protected $templates = array();
+
+    protected $showCaptcha = true;
     
     /* Functional variables */
     protected $adapter = null;
@@ -53,13 +55,27 @@ class OJModel
     {
         $this->_addIDField($id);
 
-        $this->_addCSRFTokenField();
+        $this->_addExtraFields();
 
         $this->init();
         
         if ($id != null) {
             $this->load($id);
         }
+    }
+
+    /**
+     * _addExtraFields
+     * 
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _addExtraFields()
+    {
+        $this->_addCSRFTokenField();
+
+        $this->_addCaptchaField();
     }
 
     /**
@@ -448,6 +464,25 @@ class OJModel
     }
 
     /**
+     * _addCaptchaField
+     * 
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _addCaptchaField()
+    {
+        if ($this->showCaptcha) {
+            $field = array(
+                'name' => 'ccmCaptchaCode',
+                'type' => 'captcha',
+                'validations' => 'captcha'
+            );
+            $this->fields['ccmCaptchaCode'] = $field;
+        }
+    }
+
+    /**
      * getMeta
      * 
      * @access public
@@ -570,6 +605,5 @@ class OJModel
     protected function on_after_save(&$args = null)
     {
         
-    }   
-
+    }
 }
