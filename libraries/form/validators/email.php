@@ -25,7 +25,7 @@ class EmailValidator extends OJValidator
     {
         $valueToTest = $args[$this->getDisplayFieldName()];
         if (!OJUtil::checkNotBlank($valueToTest)
-            || preg_match('/^([a-zA-Z0-9])+([a-zA-Z0-9\._-])*@([a-zA-Z0-9\._-])+.([a-zA-Z0-9\._-]+)+$/', $valueToTest)
+            || filter_var($valueToTest, FILTER_VALIDATE_EMAIL)
         ) {
             return true;
         }

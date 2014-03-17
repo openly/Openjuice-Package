@@ -2,7 +2,7 @@
 defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
-* CurrencyValidator
+* CsrfTokenValidator
 *
 * @uses     OJValidator
 *

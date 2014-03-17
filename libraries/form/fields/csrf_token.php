@@ -2,7 +2,7 @@
 defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
-* HiddenField
+* CsrfTokenField
 *
 * @uses     OJField
 *

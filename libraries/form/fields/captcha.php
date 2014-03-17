@@ -2,7 +2,7 @@
 defined('C5_EXECUTE') or die("Access Denied.");
 
 /**
-* HiddenField
+* CaptchaField
 *
 * @uses     OJField
 *
