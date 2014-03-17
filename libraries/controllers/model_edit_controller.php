@@ -197,13 +197,6 @@ class ModelEditController extends Controller
                     //To Do: set success messsage
                     $this->redirect($this->listURL);
                 }
-            } else {
-                $this->set(
-                    'error',
-                    OJUtil::getErrorsList(
-                        $model->getErrors()
-                    )
-                );
             }
         }
     }
@@ -294,6 +287,7 @@ class ModelEditController extends Controller
         $r = new Renderable($template);
         $vars = array();
         $vars['header'] = $this->getHeader();
+        $vars['errors'] = $this->_getErrors();
         $vars['main_content'] = $this->_getDetailForm();
         $vars['has_options'] = $this->model->usesWizzard();
         if ($this->model->usesWizzard()) {
@@ -317,6 +311,29 @@ class ModelEditController extends Controller
         $retstr = "<form action='' method='post' enctype='multipart/form-data'>";
         $retstr .= $this->form->getMarkup();
         return $retstr;
+    }
+
+    /**
+     * _getErrors
+     * 
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _getErrors()
+    {
+        $errors = OJUtil::getErrorsList(
+            $this->model->getErrors()
+        );
+        $html = '';
+        if (!empty($errors)) {
+            $html = '<ul class="error">';
+            foreach ($errors as $error) {
+                $html .= "<li>$error</li>";
+            }
+            $html .= '</ul>';
+        }
+        return $html;
     }
 
     /**

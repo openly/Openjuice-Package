@@ -53,6 +53,8 @@ class OJModel
     {
         $this->_addIDField($id);
 
+        $this->_addCSRFTokenField();
+
         $this->init();
         
         if ($id != null) {
@@ -419,11 +421,30 @@ class OJModel
      */
     private function _addIDField($id)
     {
-        $field['name'] = $this->identifier;
-        $field['db_col'] = $this->identifier;
-        $field['default'] = $id;
-        $field['type'] = 'hidden';
+        $field = array(
+            'name' => $this->identifier,
+            'db_col' => $this->identifier,
+            'default' => $id,
+            'type' => 'hidden'
+        );
         $this->fields[$this->identifier] = $field;
+    }
+
+    /**
+     * _addCSRFTokenField
+     * 
+     * @access private
+     *
+     * @return mixed Value.
+     */
+    private function _addCSRFTokenField()
+    {
+        $field = array(
+            'name' => 'CSRF_TOKEN',
+            'type' => 'csrfToken',
+            'validations' => 'required csrfToken'
+        );
+        $this->fields['CSRF_TOKEN'] = $field;
     }
 
     /**
