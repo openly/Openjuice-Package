@@ -12,8 +12,6 @@ defined('C5_EXECUTE') or die("Access Denied.");
 */
 class HiddenDisplayField extends OJField
 {
-    protected $hidden = true;
-
     /**
      * initialize
      * 
