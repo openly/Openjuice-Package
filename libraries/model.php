@@ -230,6 +230,9 @@ class OJModel
      */
     public function process(&$args=null)
     {
+        //sanitize the fields before processing
+        array_walk($args, array($this, 'sanitizeField'));
+
         if ($this->useWizzard) {
             //process the wizard
             // $wiz->process();
@@ -304,6 +307,20 @@ class OJModel
     public function getIdentifierField()
     {
         return $this->identifier;
+    }
+
+    /**
+     * sanitizeField
+     * 
+     * @param mixed &$field Description.
+     *
+     * @access protected
+     *
+     * @return mixed Value.
+     */
+    protected function sanitizeField(&$field)
+    {
+        $field = htmlspecialchars($field);
     }
 
     /**
