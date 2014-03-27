@@ -5,6 +5,7 @@ class HiddenField extends OJField{
 	protected $hidden = true;
 	
 	public function initialize(){
+		parent::initialize();
 		$this->template = "{{{field}}}";
 		$form = Loader::helper('form');
 		if($_SERVER['REQUEST_METHOD'] == "POST")

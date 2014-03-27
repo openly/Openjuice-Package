@@ -5,6 +5,7 @@ class HiddenDisplayField extends OJField{
 	protected $hidden = true;
 
 	public function initialize(){
+		parent::initialize();
 		$form = Loader::helper('form');
 		if($_SERVER['REQUEST_METHOD'] == "POST")
 			$this->default = $_POST[$this->getDisplayFieldName()];
