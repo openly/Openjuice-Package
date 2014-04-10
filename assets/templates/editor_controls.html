@@ -1,0 +1,17 @@
+<div class="ccm-editor-controls-left-cap">
+	<div class="ccm-editor-controls-right-cap">
+		<div class="ccm-editor-controls">
+			<ul>
+				<li ccm-file-manager-field="rich-text-editor-image">
+					<a href="#" onclick="ccm_editorSetupImagePicker(); return false" class="ccm-file-manager-launch">Add Image</a></li>
+					<li><a href="#" onclick="ccm_editorSetupFilePicker(); return false;" class="ccm-file-manager-launch">Add File</a></li>
+					<li><a onclick="ccm_editorSitemapOverlay(); return false" href="#">Insert Link to Page</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript">
+	$(function() {
+		ccm_activateFileSelectors();
+	});
+	</script>
